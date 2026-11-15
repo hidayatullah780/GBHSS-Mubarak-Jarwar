@@ -1,0 +1,132 @@
+<!doctype html>
+<!-- GBHSS Mubarak Jarwar. Developed by Hidayatullah, with the guidance of Sir Amjad Ali, the motivation of Sir Asfand Ali, and the support of the rest of the faculty. -->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in • GBHSS Mubarak Jarwar</title>
+  <meta name="description" content="Sign in to GBHSS Mubarak Jarwar — Government Boys Higher Secondary School Mubarak Jarwar, Tando Allahyar.">
+  <meta name="theme-color" content="#0b2545">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../assets/images/logo.jpg" type="image/jpeg">
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+
+  <script>
+    try {
+      var t = localStorage.getItem('gbhss-theme');
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <div class="auth-page">
+    <section class="auth-brand" aria-label="School identity">
+      <img src="../assets/images/logo.jpg" alt="GBHSS Mubarak Jarwar school emblem" style="background:#fff;border-radius:50%;padding:4px">
+      <div>
+        <h1>GBHSS Mubarak Jarwar</h1>
+        <p class="official">Government Boys Higher Secondary School Mubarak Jarwar<br>Tando Allahyar, Sindh, Pakistan</p>
+      </div>
+      <p class="tagline">Educate • Empower • Excel</p>
+    </section>
+
+    <main class="auth-main">
+      <button type="button" class="icon-btn auth-theme" id="themeBtn"></button>
+
+      <div class="auth-card">
+        <div id="status" class="notice notice-info" role="status" aria-live="polite" hidden></div>
+
+        <!-- Sign in -->
+        <div id="loginView">
+          <h2>Sign in</h2>
+          <p class="sub">Principal, teachers, students and parents sign in here with the account created by the school.</p>
+          <form id="loginForm" novalidate>
+            <div class="field">
+              <label for="email">Email address</label>
+              <input class="input" id="email" type="email" autocomplete="username" inputmode="email" aria-describedby="emailError" required>
+              <div class="field-error" id="emailError" role="alert"></div>
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <div class="input-wrap">
+                <input class="input" id="password" type="password" autocomplete="current-password" aria-describedby="passwordError" required>
+                <button type="button" class="input-toggle" id="togglePassword" aria-pressed="false" aria-controls="password">Show</button>
+              </div>
+              <div class="field-error" id="passwordError" role="alert"></div>
+            </div>
+            <div class="auth-actions">
+              <span></span>
+              <button type="button" class="link-btn" id="showReset">Forgot password?</button>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="signInBtn">Sign in</button>
+          </form>
+          <p class="sub" style="margin-top:1.25rem;font-size:.9rem;text-align:center">New teacher, student or parent? <button type="button" class="link-btn" id="showSignup">Create account</button></p>
+          <p class="sub" style="font-size:.78rem;text-align:center">New accounts can sign in only after the school administration approves them.</p>
+        </div>
+
+        <!-- Create account (needs administrator approval) -->
+        <div id="signupView" hidden>
+          <h2>Create account</h2>
+          <p class="sub">Your request will be sent to the school administration. You can sign in after it is approved.</p>
+          <form id="signupForm" novalidate>
+            <div class="field">
+              <label for="suName">Full name</label>
+              <input class="input" id="suName" maxlength="80" autocomplete="name" required>
+              <div class="field-error" id="suNameError" role="alert"></div>
+            </div>
+            <div class="field">
+              <label for="suEmail">Email address</label>
+              <input class="input" id="suEmail" type="email" inputmode="email" autocomplete="email" required>
+              <div class="field-error" id="suEmailError" role="alert"></div>
+            </div>
+            <div class="field">
+              <label for="suRole">I am a</label>
+              <select class="input" id="suRole">
+                <option value="teacher">Teacher</option>
+                <option value="student">Student</option>
+                <option value="parent">Parent / Guardian</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="suPassword">Password (at least 8 characters)</label>
+              <input class="input" id="suPassword" type="password" autocomplete="new-password" required>
+              <div class="field-error" id="suPasswordError" role="alert"></div>
+            </div>
+            <div class="field">
+              <label for="suConfirm">Confirm password</label>
+              <input class="input" id="suConfirm" type="password" autocomplete="new-password" required>
+              <div class="field-error" id="suConfirmError" role="alert"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="suBtn">Send request</button>
+            <p style="text-align:center;margin-top:1rem"><button type="button" class="link-btn" id="suBack">Back to sign in</button></p>
+          </form>
+        </div>
+
+        <!-- Password reset -->
+        <div id="resetView" hidden>
+          <h2>Reset your password</h2>
+          <p class="sub">Enter the email address of your account and we will send you a reset link.</p>
+          <form id="resetForm" novalidate>
+            <div class="field">
+              <label for="resetEmail">Email address</label>
+              <input class="input" id="resetEmail" type="email" autocomplete="email" inputmode="email" aria-describedby="resetEmailError" required>
+              <div class="field-error" id="resetEmailError" role="alert"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="resetBtn">Send reset link</button>
+            <p style="text-align:center;margin-top:1rem"><button type="button" class="link-btn" id="backToLogin">Back to sign in</button></p>
+          </form>
+        </div>
+      </div>
+      <footer style="text-align:center;margin-top:1.25rem;font-size:.78rem;line-height:1.6;color:var(--text-muted)">
+        <strong style="color:var(--text)">Developed by Hidayatullah</strong><br>
+        Under the guidance of Sir Amjad Ali &bull; With the motivation of Sir Asfand Ali<br>and the support of the rest of the faculty
+      </footer>
+    </main>
+  </div>
+
+  <noscript>GBHSS Mubarak Jarwar needs JavaScript enabled to run.</noscript>
+  <script type="module" src="../js/auth.js"></script>
+</body>
+</html>

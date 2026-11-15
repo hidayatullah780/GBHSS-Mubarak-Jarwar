@@ -1,0 +1,70 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Homework</title></head>
+<body><main id="app" class="s3-wrap"></main>
+<script type="module">
+import {boot,fs,esc,fmtDate,toMs,todayStr,lsGet,lsSet,toast} from '../js/step3-core.js';
+const {db,user,profile,role,isStaff,isAdmin} = await boot({page:'homework'});
+const app = document.getElementById('app');
+const doneKey='s3done_'+user.uid, prefKey='s3pref_'+user.uid;
+let done = lsGet(doneKey,{}), pref = lsGet(prefKey,{});
+let items = [];
+const myClass = profile.className||profile.class||profile.classId||'', mySec = profile.section||profile.sectionName||'';
+if(!pref.cls && myClass) pref.cls = String(myClass); if(!pref.sec && mySec) pref.sec = String(mySec);
+
+app.innerHTML = `<h1>Homework</h1>
+${isStaff?`<div class="s3-card"><h2>Assign new homework</h2><div class="s3-grid">
+<div><label>Class</label><input id="fc" list="cl" placeholder="e.g. 9"></div><div><label>Section</label><input id="fs" placeholder="e.g. A"></div>
+<div><label>Subject</label><input id="fj" placeholder="e.g. Maths"></div><div><label>Due date</label><input id="fd" type="date"></div></div>
+<datalist id="cl"></datalist><label>Title</label><input id="ft"><label>Details</label><textarea id="fx"></textarea>
+<p><button class="s3-btn" id="post">Post homework</button></p></div>`:''}
+<div class="s3-card"><div class="s3-grid">
+<div><label>Class</label><select id="qc"></select></div><div><label>Section</label><select id="qs"></select></div>
+<div><label>Show</label><select id="qt"><option value="">All</option><option value="up">Upcoming / today</option><option value="late">Overdue</option></select></div></div></div>
+<div class="s3-card" id="list">Loading…</div>`;
+const $=id=>document.getElementById(id);
+
+async function load(){
+  try{ const q = await fs.getDocs(fs.collection(db,'homework')); items = q.docs.map(d=>({id:d.id,...d.data()})); }
+  catch(e){ $('list').innerHTML='<span style="color:#b3261e">Could not load homework: '+esc(e.message)+' (did you publish the rules?)</span>'; return; }
+  fillFilters(); render();
+}
+function opts(arr,sel,all){ return '<option value="">'+all+'</option>'+arr.map(v=>'<option '+(v===sel?'selected':'')+'>'+esc(v)+'</option>').join(''); }
+function fillFilters(){
+  const cs=[...new Set(items.map(i=>i.className).filter(Boolean))].sort(), ss=[...new Set(items.map(i=>i.section).filter(Boolean))].sort();
+  $('qc').innerHTML=opts(cs,pref.cls,'All classes'); $('qs').innerHTML=opts(ss,pref.sec,'All sections');
+  if($('cl')) $('cl').innerHTML=cs.map(c=>'<option value="'+esc(c)+'">').join('');
+}
+function render(){
+  const c=$('qc').value,s=$('qs').value,t=$('qt').value,td=todayStr();
+  pref={cls:c,sec:s}; lsSet(prefKey,pref);
+  const rows = items.filter(i=>(!c||i.className===c)&&(!s||!i.section||i.section===s)&&(!t||(t==='late'?i.dueDate<td:i.dueDate>=td)))
+    .sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+  $('list').innerHTML = rows.length ? rows.map(i=>{
+    const late=i.dueDate<td, today=i.dueDate===td;
+    const can = isAdmin || (isStaff && i.createdBy===user.uid);
+    return `<div class="s3-item"><span class="s3-badge">${esc(i.subject)}</span><span class="s3-badge">Class ${esc(i.className)}${i.section?'-'+esc(i.section):''}</span>
+    <span class="s3-badge ${late?'late':today?'today':'ok'}">${late?'Overdue':today?'Due today':'Due'} ${esc(i.dueDate)}</span>
+    <h2 style="margin:8px 0 4px">${esc(i.title)}</h2><div>${esc(i.description).replace(/\n/g,'<br>')}</div>
+    <div class="s3-muted">Posted by ${esc(i.createdByName)} on ${fmtDate(i.createdAt)}</div>
+    ${!isStaff?`<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" style="width:auto" data-done="${i.id}" ${done[i.id]?'checked':''}> Mark as done (only on this device)</label>`:''}
+    ${can?`<p><button class="s3-btn red" data-del="${i.id}">Delete</button></p>`:''}</div>`;
+  }).join('') : '<span class="s3-muted">No homework found.</span>';
+}
+['qc','qs','qt'].forEach(id=>$(id).onchange=render);
+app.addEventListener('change',e=>{ const k=e.target.dataset.done; if(k){ done[k]=e.target.checked; lsSet(doneKey,done);} });
+app.addEventListener('click',async e=>{
+  const k=e.target.dataset.del; if(!k||!confirm('Delete this homework?')) return;
+  try{ await fs.deleteDoc(fs.doc(db,'homework',k)); toast('Deleted'); load(); }catch(err){ toast(err.message,true); }
+});
+if($('post')) $('post').onclick = async ()=>{
+  const v={className:$('fc').value.trim(),section:$('fs').value.trim(),subject:$('fj').value.trim(),title:$('ft').value.trim(),description:$('fx').value.trim(),dueDate:$('fd').value};
+  if(!v.className||!v.subject||!v.title||!v.dueDate) return toast('Class, subject, title and due date are required',true);
+  $('post').disabled=true;
+  try{
+    await fs.addDoc(fs.collection(db,'homework'),{...v,createdBy:user.uid,createdByName:profile.displayName||user.email,createdAt:fs.serverTimestamp()});
+    for(const audience of ['students','parents']) await fs.addDoc(fs.collection(db,'notifications'),{audience,type:'homework',title:'New homework: '+v.subject,body:'Class '+v.className+(v.section?'-'+v.section:'')+' · '+v.title+' · due '+v.dueDate,createdBy:user.uid,createdAt:fs.serverTimestamp()});
+    ['ft','fx','fd'].forEach(i=>$(i).value=''); toast('Homework posted'); await load();
+  }catch(err){ toast(err.message,true); }
+  $('post').disabled=false;
+};
+load();
+</script></body></html>

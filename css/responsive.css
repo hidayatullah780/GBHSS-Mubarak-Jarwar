@@ -1,0 +1,37 @@
+/* GBHSS Mubarak Jarwar — responsive rules */
+
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); width: var(--sidebar-w) !important; box-shadow: var(--shadow-md); }
+  .app-shell.is-open .sidebar { transform: translateX(0); }
+  .app-shell.is-open .sidebar-overlay {
+    display: block; position: fixed; inset: 0; background: rgba(7, 26, 51, .55); z-index: 55;
+  }
+  .main, .app-shell.is-collapsed .main { margin-left: 0; }
+  /* Collapsed state is a desktop-only feature: always show labels on mobile */
+  .app-shell.is-collapsed .brand-text,
+  .app-shell.is-collapsed .nav-label { display: initial; }
+  .app-shell.is-collapsed .nav-item { justify-content: flex-start; }
+  .brand-text { display: flex; }
+  .content { padding: 1rem; }
+  .profile-meta, .chip { display: none; }
+}
+
+@media (max-width: 720px) {
+  .auth-page { grid-template-columns: 1fr; }
+  .auth-brand { padding: 1.75rem 1.5rem; flex-direction: row; align-items: center; }
+  .auth-brand img { width: 56px; height: 56px; }
+  .auth-brand h1 { font-size: 1.3rem; }
+  .auth-brand .official { display: none; }
+}
+
+@media (max-width: 480px) {
+  .search { flex: 1 1 auto; }
+  .topbar { gap: .35rem; padding: 0 .6rem; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .popover { position: fixed; left: 12px; right: 12px; top: calc(var(--topbar-h) + 8px); width: auto; max-width: none; }
+}
+
+@media print {
+  .sidebar, .topbar, .preview-banner, .sidebar-overlay { display: none !important; }
+  .main { margin-left: 0 !important; }
+}

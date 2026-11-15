@@ -1,0 +1,99 @@
+rules_version = '2';
+
+// GBHSS Mubarak Jarwar — Firestore Security Rules (Stage 2 version)
+//
+// How to read this file:
+//   * Firestore DENIES everything that no rule explicitly allows.
+//   * Stage 2 only opens the collections that exist so far: users, settings, auditLogs.
+//   * Each later stage adds rules for its own collections (students, attendance, marks ...).
+//     Until then those collections cannot be read or written by anyone from a browser.
+//
+// A user's role lives in the document  users/{their uid}.  Only an admin can create or change
+// that document, so nobody can promote themselves. The very first admin is created by you in
+// the Firebase Console, which is a trusted channel that is not subject to these rules.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- helpers
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myProfilePath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function hasProfile() {
+      return signedIn() && exists(myProfilePath());
+    }
+
+    function myProfile() {
+      return get(myProfilePath()).data;
+    }
+
+    // Signed in AND has a profile AND the account has not been deactivated.
+    function isActive() {
+      return hasProfile() && myProfile().active == true;
+    }
+
+    function hasRole(role) {
+      return isActive() && myProfile().role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function validRole(role) {
+      return role in ['admin', 'teacher', 'student', 'parent'];
+    }
+
+    // ------------------------------------------------------------------ users
+    match /users/{uid} {
+      // You can read your own profile; admins can read everyone's.
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      // Only admins create or change profiles, with a valid role and an on/off flag.
+      allow create: if isAdmin()
+                    && validRole(request.resource.data.role)
+                    && request.resource.data.active is bool;
+
+      // An admin cannot demote or deactivate THEIR OWN account (prevents locking everyone out).
+      allow update: if isAdmin()
+                    && validRole(request.resource.data.role)
+                    && request.resource.data.active is bool
+                    && (uid != request.auth.uid
+                        || (request.resource.data.role == 'admin'
+                            && request.resource.data.active == true));
+
+      // Accounts are deactivated (active = false), never deleted, so history stays intact.
+      allow delete: if false;
+    }
+
+    // --------------------------------------------------------------- settings
+    // School-wide configuration (school name, working days, grading scale ...).
+    match /settings/{docId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    // -------------------------------------------------------------- auditLogs
+    // Append-only: anyone active can ADD an entry about their own action, only admins can
+    // READ them, and nobody can edit or delete an entry afterwards.
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+
+      allow create: if isActive()
+                    && request.resource.data.keys().hasAll(['actorUid', 'action', 'createdAt'])
+                    && request.resource.data.keys().hasOnly(
+                         ['actorUid', 'actorRole', 'action', 'targetType', 'targetId', 'details', 'createdAt'])
+                    && request.resource.data.actorUid == request.auth.uid
+                    && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+    }
+
+    // Everything else (students, teachers, attendance, marks ...) has no rule yet => denied.
+  }
+}

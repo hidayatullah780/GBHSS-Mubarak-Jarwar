@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Announcements</title></head>
+<body><main id="app" class="s3-wrap"></main>
+<script type="module">
+import {boot,fs,esc,fmtDate,fetchByAudience,toast} from '../js/step3-core.js';
+const {db,user,profile,role,isStaff,isAdmin} = await boot({page:'announcements'});
+const app=document.getElementById('app'), $=id=>document.getElementById(id);
+const label={all:'Everyone',teachers:'Teachers',students:'Students',parents:'Parents'};
+app.innerHTML=`<h1>Announcements</h1>
+${isStaff?`<div class="s3-card"><h2>Post an announcement</h2><label>Title</label><input id="at"><label>Message</label><textarea id="ab"></textarea>
+<label>Send to</label><select id="au"><option value="all">Everyone</option><option value="teachers">Teachers</option><option value="students">Students</option><option value="parents">Parents</option></select>
+<p><button class="s3-btn" id="post">Post</button></p></div>`:''}
+<div class="s3-card" id="list">Loading…</div>`;
+async function load(){
+  try{
+    const rows=await fetchByAudience(db,'announcements',role);
+    $('list').innerHTML = rows.length ? rows.map(a=>`<div class="s3-item"><span class="s3-badge">${label[a.audience]||esc(a.audience)}</span><span class="s3-muted">${fmtDate(a.createdAt)} · ${esc(a.createdByName)}</span>
+      <h2 style="margin:6px 0 4px">${esc(a.title)}</h2><div>${esc(a.body).replace(/\n/g,'<br>')}</div>
+      ${(isAdmin||(isStaff&&a.createdBy===user.uid))?`<p><button class="s3-btn red" data-del="${a.id}">Delete</button></p>`:''}</div>`).join('') : '<span class="s3-muted">No announcements yet.</span>';
+  }catch(e){ $('list').innerHTML='<span style="color:#b3261e">Could not load: '+esc(e.message)+' (did you publish the rules?)</span>'; }
+}
+app.addEventListener('click',async e=>{ const k=e.target.dataset.del; if(!k||!confirm('Delete this announcement?')) return;
+  try{ await fs.deleteDoc(fs.doc(db,'announcements',k)); toast('Deleted'); load(); }catch(err){ toast(err.message,true); } });
+if($('post')) $('post').onclick=async()=>{
+  const title=$('at').value.trim(), body=$('ab').value.trim(), audience=$('au').value;
+  if(!title||!body) return toast('Title and message are required',true);
+  $('post').disabled=true;
+  try{
+    const by={createdBy:user.uid,createdByName:profile.displayName||user.email,createdAt:fs.serverTimestamp()};
+    await fs.addDoc(fs.collection(db,'announcements'),{title,body,audience,...by});
+    await fs.addDoc(fs.collection(db,'notifications'),{audience,type:'announcement',title:'Announcement: '+title,body:body.slice(0,90),createdBy:user.uid,createdAt:fs.serverTimestamp()});
+    $('at').value=''; $('ab').value=''; toast('Announcement posted'); await load();
+  }catch(err){ toast(err.message,true); }
+  $('post').disabled=false;
+};
+load();
+</script></body></html>

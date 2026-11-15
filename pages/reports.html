@@ -1,0 +1,29 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reports</title></head>
+<body><main id="app" class="s3-wrap"></main>
+<script type="module">
+import {boot,fs,esc,fmtDate,toMs,csvDownload,SETTINGS,toast} from '../js/step3-core.js';
+const {db,isAdmin} = await boot({page:'reports',roles:['admin','teacher']});
+const app=document.getElementById('app'), $=id=>document.getElementById(id);
+app.innerHTML=`<h1>Reports</h1>
+<div class="s3-card"><h2>Homework report</h2><div class="s3-grid"><div><label>Due from</label><input type="date" id="df"></div><div><label>Due to</label><input type="date" id="dt"></div><div><label>Class</label><input id="dc" placeholder="all"></div></div>
+<p class="s3-noprint"><button class="s3-btn" id="hrun">Show</button> <button class="s3-btn sec" id="hcsv">Download CSV</button> <button class="s3-btn sec" onclick="print()">Print</button></p><div id="hout"></div></div>
+<div class="s3-card"><h2>Announcements log</h2><p class="s3-noprint"><button class="s3-btn" id="arun">Show</button> <button class="s3-btn sec" id="acsv">Download CSV</button> <button class="s3-btn sec" onclick="print()">Print</button></p><div id="aout"></div></div>
+${isAdmin?`<div class="s3-card s3-noprint"><h2>Export any data to CSV (admin)</h2><div class="s3-grid"><div><label>Collection</label><select id="ec">${SETTINGS.EXPORT_COLLECTIONS.map(c=>'<option>'+esc(c)+'</option>').join('')}</select></div><div><label>Or type a name</label><input id="ex" placeholder="optional"></div></div>
+<p><button class="s3-btn" id="erun">Download CSV</button></p><p class="s3-muted">Use this for attendance, results, students etc. Open the CSV in Excel.</p></div>`:''}`;
+let hrows=[], arows=[];
+const all=async c=>(await fs.getDocs(fs.collection(db,c))).docs.map(d=>({id:d.id,...d.data()}));
+async function homework(){
+  const f=$('df').value,t=$('dt').value,c=$('dc').value.trim();
+  hrows=(await all('homework')).filter(i=>(!f||i.dueDate>=f)&&(!t||i.dueDate<=t)&&(!c||i.className===c)).sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+  $('hout').innerHTML=hrows.length?'<table><tr><th>Due</th><th>Class</th><th>Subject</th><th>Title</th><th>Teacher</th></tr>'+hrows.map(i=>`<tr><td>${esc(i.dueDate)}</td><td>${esc(i.className)}${i.section?'-'+esc(i.section):''}</td><td>${esc(i.subject)}</td><td>${esc(i.title)}</td><td>${esc(i.createdByName)}</td></tr>`).join('')+'</table><p class="s3-muted">Total: '+hrows.length+'</p>':'<span class="s3-muted">Nothing found.</span>';
+}
+async function ann(){
+  arows=(await all('announcements')).sort((a,b)=>toMs(b.createdAt)-toMs(a.createdAt));
+  $('aout').innerHTML=arows.length?'<table><tr><th>Date</th><th>To</th><th>Title</th><th>By</th></tr>'+arows.map(a=>`<tr><td>${fmtDate(a.createdAt)}</td><td>${esc(a.audience)}</td><td>${esc(a.title)}</td><td>${esc(a.createdByName)}</td></tr>`).join('')+'</table>':'<span class="s3-muted">Nothing found.</span>';
+}
+const guard=fn=>async()=>{ try{ await fn(); }catch(e){ toast(e.message,true); } };
+$('hrun').onclick=guard(homework); $('arun').onclick=guard(ann);
+$('hcsv').onclick=guard(async()=>{ await homework(); csvDownload('homework-report.csv',hrows); });
+$('acsv').onclick=guard(async()=>{ await ann(); csvDownload('announcements-log.csv',arows); });
+if($('erun')) $('erun').onclick=guard(async()=>{ const c=$('ex').value.trim()||$('ec').value; const r=await all(c); if(!r.length) return toast('No documents in "'+c+'"',true); csvDownload(c+'.csv',r); });
+</script></body></html>

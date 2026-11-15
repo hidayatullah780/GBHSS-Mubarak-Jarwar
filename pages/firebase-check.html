@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Firebase check • GBHSS Mubarak Jarwar</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="../assets/images/logo.jpg">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .check-wrap { max-width: 680px; margin: 2rem auto; padding: 0 1rem; }
+    .check-wrap .card { margin-bottom: 1rem; }
+    .result { display: flex; gap: .75rem; padding: .75rem 0; border-top: 1px solid var(--border); }
+    .result:first-child { border-top: 0; }
+    .result .tag { flex: none; font-weight: 700; min-width: 3.2rem; }
+    .result .tag.pass { color: #15803d; }
+    .result .tag.fail { color: var(--danger); }
+    .result .tag.skip { color: var(--text-muted); }
+    .result small { display: block; color: var(--text-muted); }
+    .mono { font-family: ui-monospace, Consolas, monospace; word-break: break-all; }
+  </style>
+  <script>
+    try { var t = localStorage.getItem('gbhss-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
+</head>
+<body>
+  <main class="check-wrap">
+    <h1>Firebase connection check</h1>
+    <div class="notice notice-warn" role="note">
+      Developer tool for Stage 2 only. It is deleted in Stage 3 when the real sign-in page is connected.
+    </div>
+
+    <section class="card" aria-live="polite">
+      <h2>1. Connection</h2>
+      <p id="connection">Checking…</p>
+    </section>
+
+    <section class="card" id="signInCard" hidden>
+      <h2>2. Sign in with your admin account</h2>
+      <form id="signInForm" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <input class="input" id="email" type="email" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input class="input" id="password" type="password" autocomplete="current-password" required>
+        </div>
+        <div class="field-error" id="signInError" role="alert"></div>
+        <button class="btn btn-primary" type="submit">Sign in</button>
+      </form>
+    </section>
+
+    <section class="card" id="signedInCard" hidden>
+      <h2>2. Signed in</h2>
+      <p>Email: <strong id="who"></strong></p>
+      <p>Your User UID: <span class="mono" id="uid"></span></p>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-primary" id="runChecks" type="button">Run security checks</button>
+        <button class="btn btn-ghost" id="signOutBtn" type="button">Sign out</button>
+      </div>
+    </section>
+
+    <section class="card" id="resultsCard" hidden>
+      <h2>3. Results</h2>
+      <div id="results"></div>
+    </section>
+  </main>
+
+  <script type="module" src="../js/firebase-check.js"></script>
+</body>
+</html>

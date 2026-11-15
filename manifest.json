@@ -1,0 +1,15 @@
+{
+  "name": "GBHSS Mubarak Jarwar",
+  "short_name": "GBHSS",
+  "start_url": "/GBHSS-Mubarak-Jarwar/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a73e8",
+  "icons": [
+    {
+      "src": "/GBHSS-Mubarak-Jarwar/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
